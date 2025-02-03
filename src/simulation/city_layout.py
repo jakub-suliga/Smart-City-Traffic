@@ -8,6 +8,7 @@ class city_layout:
 
     def create_city_graph(self, intersection_count=4, street_count=4, seed=42):
         city_graph = nx.Graph()
+        city_graph.add_nodes_from(range(intersection_count))
 
         return city_graph
 
