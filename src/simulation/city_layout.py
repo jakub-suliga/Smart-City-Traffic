@@ -1,3 +1,4 @@
+# city_layout.py
 import random
 import networkx as nx
 
@@ -26,7 +27,6 @@ class city_layout:
             )
 
         # Maximale Anzahl an Kanten unter Beachtung, dass jeder Knoten maximal 4 Kanten haben darf:
-        # Für einen vollständigen Graphen ohne Gradbeschränkung wären es n*(n-1)/2, jedoch beschränkt uns der Grad auf 4 -> max 2*n (weil jede Kante 2 Grad beisteuert)
         max_possible_edges = min(
             intersection_count * (intersection_count - 1) // 2, 2 * intersection_count
         )
@@ -37,7 +37,7 @@ class city_layout:
 
         random.seed(seed)
         city_graph = nx.Graph()
-        # Knoten hinzufügen (0 bis intersection_count - 1)
+        # Knoten hinzufügen
         city_graph.add_nodes_from(range(intersection_count))
 
         # Schritt 1: Erzeuge einen zufälligen Spannbaum, um Konnektivität zu gewährleisten.
@@ -60,20 +60,15 @@ class city_layout:
 
         while current_edge_count < street_count and attempts < max_attempts:
             node1, node2 = random.sample(range(intersection_count), 2)
-            # Falls die Kante bereits existiert, überspringe
             if city_graph.has_edge(node1, node2):
                 attempts += 1
                 continue
-            # Prüfe, ob beide Knoten den Grad < 4 haben
             if city_graph.degree(node1) >= 4 or city_graph.degree(node2) >= 4:
                 attempts += 1
                 continue
-            # Füge die Kante hinzu
             city_graph.add_edge(node1, node2)
             current_edge_count += 1
-            attempts = (
-                0  # Reset der Versuche, wenn erfolgreich eine Kante hinzugefügt wurde
-            )
+            attempts = 0  # Reset der Versuche bei Erfolg
 
         if current_edge_count < street_count:
             raise RuntimeError(
