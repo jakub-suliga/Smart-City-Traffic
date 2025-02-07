@@ -8,7 +8,6 @@ class Street:
         self.speed_limit = speed_limit
         self.start = start
         self.end = end
-        # Create a fixed-length array initially filled with None (empty slots)
         self.vehicles = np.full(length, None, dtype=object)
 
     def getVehicleCount(self):
