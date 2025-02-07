@@ -1,4 +1,4 @@
 class Intersection:
-    def __init__(self):
-        self.incoming_roads = []
-        self.outgoing_roads = []
+    def __init__(self, incoming_streets, outgoing_streets):
+        self.incoming_streets = incoming_streets
+        self.outgoing_streets = outgoing_streets
