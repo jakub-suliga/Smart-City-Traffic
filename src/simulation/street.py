@@ -38,13 +38,13 @@ class Street:
         self.vehicles[0] = vehicle
         return True
 
-    def removeVehicle(self):
+    def removeVehicle(self) -> Vehicle:
         """
         Removes the vehicle at the last occupied position (highest index)
         and returns it. If no vehicle is present, returns None.
         """
         removed_vehicle = self.vehicles[self.length - 1]
-        self.vehicles[i] = None
+        self.vehicles[self.length - 1] = None
         return removed_vehicle
 
     def simulate(self):
@@ -60,10 +60,8 @@ class Street:
         for i in range(self.length):
             vehicle = self.vehicles[i]
             if vehicle is not None:
-                # If not at the end and the cell ahead (from the old configuration) is free, move forward.
                 if i < self.length - 1 and self.vehicles[i + 1] is None:
                     new_state[i + 1] = vehicle
                 else:
-                    # Vehicle stays in its current position
                     new_state[i] = vehicle
         self.vehicles = new_state
