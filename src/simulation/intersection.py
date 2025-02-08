@@ -1,19 +1,33 @@
+from typing import List, Optional
 from street import Street
 from vehicle import Vehicle
 
 
 class Intersection:
-    def __init__(self, streets):
+    streets: List[Street]
+
+    def __init__(self, streets: List[Street]) -> None:
         self.streets = streets
 
-    def simulate(self, street: int):
-        dest = self.streets[street].getLastVehicle().get_destination()
+    def simulate(self, street_index: int) -> None:
+        """
+        Simulates a single step for the intersection on the given street.
+        Moves the vehicle from the specified street to a target street based on its destination.
+        """
+        vehicle: Optional[Vehicle] = self.streets[street_index].get_last_vehicle()
+        if vehicle is None:
+            return
+
+        dest = vehicle.get_destination()
         if dest == 0:
-            vehc = self.streets[street].removeVehicle()
-            self.streets[(street + 1) % 3].addVehicle(vehc)
+            target_index = (street_index + 1) % 4
         elif dest == 1:
-            vehc = self.streets[street].removeVehicle()
-            self.streets[(street + 3) % 3].addVehicle(vehc)
+            target_index = (street_index + 2) % 4
         else:
-            vehc = self.streets[street].removeVehicle()
-            self.streets[(street + 2) % 3].addVehicle(vehc)
+            target_index = (street_index + 3) % 4
+
+        added = self.streets[target_index].add_vehicle(removed_vehicle)
+        if not added:
+            # TODO: Handle collision
+            pass
+        removed_vehicle = self.streets[street_index].remove_vehicle()
