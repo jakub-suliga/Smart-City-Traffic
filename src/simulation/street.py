@@ -3,7 +3,13 @@ from vehicle import Vehicle
 
 
 class Street:
-    def __init__(self, length, speed_limit, start, end):
+    length: int
+    speed_limit: int
+    start: int
+    end: int
+    vehicles: np.ndarray
+
+    def __init__(self, length: int, speed_limit: int, start: int, end: int) -> None:
         self.length = length
         self.speed_limit = speed_limit
         self.start = start
@@ -14,17 +20,14 @@ class Street:
         """Returns the number of vehicles on the street."""
         return sum(1 for v in self.vehicles if v is not None)
 
-    def getLastVehicle(self):
+    def getLastVehicle(self) -> Vehicle:
         """
         Returns the vehicle in the last occupied slot (highest index)
         or None if there are no vehicles.
         """
-        for i in range(self.length - 1, -1, -1):
-            if self.vehicles[i] is not None:
-                return self.vehicles[i]
-        return None
+        return self.vehicles[-1]
 
-    def addVehicle(self, vehicle):
+    def addVehicle(self, vehicle: Vehicle):
         """
         Inserts a vehicle at the starting position (index 0).
         If that position is already occupied, returns False.
