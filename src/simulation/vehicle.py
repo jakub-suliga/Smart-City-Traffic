@@ -6,4 +6,4 @@ class Vehicle:
         pass
 
     def get_destination(self):
-        return random.randint(0, 3)
+        return random.randint(0, 2)
