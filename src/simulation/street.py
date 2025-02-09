@@ -57,7 +57,7 @@ class Street:
         and the result is stored in a new state list.
         """
         new_state: List[Optional[Vehicle]] = [None] * self.length
-        for i in range(self.length):
+        for i in reversed(range(self.length)):
             vehicle = self.vehicles[i]
             if vehicle is not None:
                 if i < self.length - 1 and self.vehicles[i + 1] is None:
