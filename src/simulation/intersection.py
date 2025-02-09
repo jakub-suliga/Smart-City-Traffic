@@ -27,7 +27,5 @@ class Intersection:
             target_index = (street_index + 3) % 4
 
         added = self.streets[target_index].add_vehicle(removed_vehicle)
-        if not added:
-            # TODO: Handle collision
-            pass
-        removed_vehicle = self.streets[street_index].remove_vehicle()
+        if added:
+            removed_vehicle = self.streets[street_index].remove_vehicle()
