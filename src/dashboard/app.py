@@ -5,58 +5,72 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import networkx as nx
 
-# Importiere deinen city_layout Generator
 from simulation import city_layout
 
 
-def networkx_to_plotly(G):
-    # Berechne das Layout (Positionen der Knoten)
-    pos = nx.spring_layout(G, seed=42)
+def city_to_plotly(layout):
+    """
+    Konvertiert ein city_layout-Objekt in eine Plotly-Figur unter Verwendung eines planaren Layouts,
+    sodass sich die Kanten (sofern möglich) nicht überschneiden.
+    """
+    # Erstelle einen NetworkX-Graphen aus den Kreuzungen und Straßen
+    G = nx.Graph()
+    for i, inter in enumerate(layout.intersections):
+        G.add_node(i)
+    for street in layout.streets:
+        G.add_edge(
+            street.start,
+            street.end,
+            length=street.length,
+            speed_limit=street.speed_limit,
+        )
 
-    # Erstelle separate Listen für die Kantenkoordinaten
-    edge_x = []
-    edge_y = []
-    for edge in G.edges():
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        edge_x.extend([x0, x1, None])
-        edge_y.extend([y0, y1, None])
+    # Versuche, ein planares Layout zu berechnen. Falls dies fehlschlägt,
+    # werden als Fallback die in der Simulation hinterlegten Positionen genutzt.
+    try:
+        pos = nx.planar_layout(G)
+    except Exception as e:
+        pos = {i: inter.position for i, inter in enumerate(layout.intersections)}
 
     # Erstelle den Trace für die Kanten
+    edge_x = []
+    edge_y = []
+    for u, v in G.edges():
+        x0, y0 = pos[u]
+        x1, y1 = pos[v]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
     edge_trace = go.Scatter(
         x=edge_x,
         y=edge_y,
-        line=dict(width=1, color="#888"),
+        line=dict(width=2, color="#888"),
         hoverinfo="none",
         mode="lines",
     )
 
-    # Erstelle separate Listen für die Knotenkoordinaten und Texte
+    # Erstelle den Trace für die Knoten
     node_x = []
     node_y = []
-    node_text = []
     for node in G.nodes():
         x, y = pos[node]
         node_x.append(x)
         node_y.append(y)
-        node_text.append(str(node))
-
-    # Erstelle den Trace für die Knoten
     node_trace = go.Scatter(
         x=node_x,
         y=node_y,
-        text=node_text,
         mode="markers+text",
+        text=[str(node) for node in G.nodes()],
         textposition="top center",
         hoverinfo="text",
-        marker=dict(size=20, color="skyblue", line=dict(width=2)),
+        marker=dict(showscale=False, color="#FFA07A", size=10, line=dict(width=2)),
     )
 
-    # Erstelle und gebe die Figure zurück
+    # Erzeuge die Plotly-Figur
     fig = go.Figure(
         data=[edge_trace, node_trace],
         layout=go.Layout(
-            title="City Layout",
+            title="City Layout Graph (Planar)",
+            titlefont=dict(size=16),
             showlegend=False,
             hovermode="closest",
             margin=dict(b=20, l=5, r=5, t=40),
@@ -70,9 +84,9 @@ def networkx_to_plotly(G):
 # Initialisiere die Dash-App
 app = dash.Dash(__name__)
 
-# Erzeuge einen initialen Graph mit Standardparametern
+# Erzeuge einen initialen city_layout mit Standardparametern
 default_layout = city_layout(intersection_count=4, street_count=4, seed=42)
-initial_fig = networkx_to_plotly(default_layout.graph)
+initial_fig = city_to_plotly(default_layout)
 
 # Definiere das Layout der App: linke Spalte für den Graph, rechte Spalte für die Parameter
 app.layout = html.Div(
@@ -128,17 +142,17 @@ app.layout = html.Div(
 )
 def update_graph(n_clicks, intersections, streets, seed):
     if n_clicks is None or n_clicks == 0:
-        # Kein Klick: Keine Aktualisierung
+        # Noch kein Klick – keine Aktualisierung
         raise dash.exceptions.PreventUpdate
     try:
-        # Generiere den neuen city_layout Graph
+        # Generiere einen neuen city_layout-Graphen
         new_layout = city_layout(
             intersection_count=intersections, street_count=streets, seed=seed
         )
-        new_fig = networkx_to_plotly(new_layout.graph)
+        new_fig = city_to_plotly(new_layout)
         return new_fig, ""
     except Exception as e:
-        # Bei einem Fehler gebe diesen als Nachricht aus, ohne den Graph zu verändern.
+        # Bei einem Fehler: Gib den Fehlertext aus, ohne den aktuellen Graphen zu verändern.
         return dash.no_update, f"Fehler: {str(e)}"
 
 
