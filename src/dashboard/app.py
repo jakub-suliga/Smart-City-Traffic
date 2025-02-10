@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import networkx as nx
 
-from simulation import city_layout
+from ..simulation import city_layout
 
 
 def city_to_plotly(layout):
@@ -69,8 +69,6 @@ def city_to_plotly(layout):
     fig = go.Figure(
         data=[edge_trace, node_trace],
         layout=go.Layout(
-            title="City Layout Graph (Planar)",
-            titlefont=dict(size=16),
             showlegend=False,
             hovermode="closest",
             margin=dict(b=20, l=5, r=5, t=40),
