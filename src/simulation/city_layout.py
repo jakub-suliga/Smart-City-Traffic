@@ -1,7 +1,7 @@
 import random
 from typing import List, Tuple
-from intersection import Intersection
-from street import Street
+from .intersection import Intersection
+from .street import Street
 
 
 class city_layout:
@@ -27,9 +27,9 @@ class city_layout:
             raise ValueError(
                 f"Für einen zusammenhängenden Graphen sind mindestens {intersection_count - 1} Straßen notwendig."
             )
-        if intersection_count >= 3 and street_count > (3 * intersection_count - 6):
+        if intersection_count >= 3 and street_count > (4 * intersection_count):
             raise ValueError(
-                f"Für {intersection_count} Kreuzungen sind maximal {3 * intersection_count - 6} Straßen möglich (planar)."
+                f"Für {intersection_count} Kreuzungen sind maximal {4 * intersection_count} Straßen möglich (planar)."
             )
 
         random.seed(seed)
