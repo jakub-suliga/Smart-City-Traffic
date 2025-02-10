@@ -1,6 +1,6 @@
 from typing import List, Optional
-from street import Street
-from vehicle import Vehicle
+from .street import Street
+from .vehicle import Vehicle
 
 
 class Intersection:
