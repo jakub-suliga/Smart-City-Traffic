@@ -1,5 +1,5 @@
 from typing import Optional, List
-from vehicle import Vehicle
+from .vehicle import Vehicle
 
 
 class Street:
