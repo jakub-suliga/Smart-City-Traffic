@@ -165,17 +165,3 @@ class city_layout:
                 f"Warnung: Es konnten nur {extra_edges_added} zusätzliche Straßen hinzugefügt werden, "
                 f"anstatt der gewünschten {extra_edges_needed} (Planaritätsbedingte Einschränkung)."
             )
-
-
-# Beispiel zur Nutzung:
-if __name__ == "__main__":
-    # Erzeuge ein city_layout mit 6 Kreuzungen und 8 Straßen
-    layout = city_layout(intersection_count=6, street_count=8, seed=123)
-    print("Kreuzungen (mit Positionen):")
-    for i, inter in enumerate(layout.intersections):
-        print(f" {i}: {inter.position}")
-    print("Straßen (als Verbindungen zwischen den Knoten):")
-    for street in layout.streets:
-        print(
-            f" {street.start} <--> {street.end}, Länge: {street.length}, Limit: {street.speed_limit}"
-        )
