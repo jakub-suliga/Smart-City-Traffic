@@ -6,30 +6,21 @@ from .street import Street
 
 class city_layout:
     def __init__(self, grid_rows: int = 4, grid_cols: int = 4, seed: int = 42):
-        """
-        Erzeugt ein toroidales Gitter mit grid_rows x grid_cols Kreuzungen.
-        Jede Kreuzung ist über wrap‑around mit genau 4 Straßen verbunden.
-        """
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.seed = seed
-
-        # Hier speichern wir die Kreuzungen als 2D‑Array (Liste von Listen)
         self.intersections: List[List[Intersection]] = []
-        # Alle erzeugten Straßen sammeln wir in einer Liste
         self.streets: List[Street] = []
 
         self._create_grid()
 
     def _create_grid(self) -> None:
         random.seed(self.seed)
-        # 1. Erzeuge das 2D‑Array der Kreuzungen.
         self.intersections = []
         for i in range(self.grid_rows):
             row = []
             for j in range(self.grid_cols):
                 inter = Intersection(streets=[])
-                # Hier setzen wir die Position; für eine natürliche Darstellung verwenden wir (x, y) = (j, -i)
                 inter.position = (j, -i)
                 row.append(inter)
             self.intersections.append(row)
