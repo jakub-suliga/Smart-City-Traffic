@@ -5,34 +5,50 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import networkx as nx
 
-from ..simulation import city_layout
+from ..simulation import city_layout  # Importiere unsere angepasste CityLayout-Klasse
 
 
 def city_to_plotly(layout):
     """
-    Konvertiert ein city_layout-Objekt in eine Plotly-Figur unter Verwendung eines planaren Layouts,
-    sodass sich die Kanten (sofern möglich) nicht überschneiden.
+    Konvertiert ein CityLayout-Objekt in eine Plotly-Figur unter Verwendung eines planaren Layouts.
     """
-    # Erstelle einen NetworkX-Graphen aus den Kreuzungen und Straßen
+    # Falls intersections als 2D‑Array vorliegt, flachen wir es zu einer Liste ab.
+    if isinstance(layout.intersections[0], list):
+        flat_intersections = []
+        coord_to_id = {}
+        id_to_pos = {}
+        node_id = 0
+        for i, row in enumerate(layout.intersections):
+            for j, inter in enumerate(row):
+                flat_intersections.append(inter)
+                coord_to_id[(i, j)] = node_id
+                id_to_pos[node_id] = inter.position
+                node_id += 1
+    else:
+        flat_intersections = layout.intersections
+        coord_to_id = {i: i for i in range(len(flat_intersections))}
+        id_to_pos = {i: inter.position for i, inter in enumerate(flat_intersections)}
+
+    # Erstelle einen NetworkX-Graphen.
     G = nx.Graph()
-    for i, inter in enumerate(layout.intersections):
-        G.add_node(i)
+    for node_id in id_to_pos:
+        G.add_node(node_id)
+
+    # Füge Kanten hinzu – beachte, dass in den Street-Objekten die Endpunkte als (i,j)-Tupel gespeichert sind.
     for street in layout.streets:
+        start_id = coord_to_id[street.start]
+        end_id = coord_to_id[street.end]
         G.add_edge(
-            street.start,
-            street.end,
-            length=street.length,
-            speed_limit=street.speed_limit,
+            start_id, end_id, length=street.length, speed_limit=street.speed_limit
         )
 
-    # Versuche, ein planares Layout zu berechnen. Falls dies fehlschlägt,
-    # werden als Fallback die in der Simulation hinterlegten Positionen genutzt.
+    # Versuche, ein planäres Layout zu berechnen; falls das fehlschlägt, verwende die hinterlegten Positionen.
     try:
         pos = nx.planar_layout(G)
-    except Exception as e:
-        pos = {i: inter.position for i, inter in enumerate(layout.intersections)}
+    except Exception:
+        pos = id_to_pos
 
-    # Erstelle den Trace für die Kanten
+    # Kanten-Trace
     edge_x = []
     edge_y = []
     for u, v in G.edges():
@@ -48,7 +64,7 @@ def city_to_plotly(layout):
         mode="lines",
     )
 
-    # Erstelle den Trace für die Knoten
+    # Knoten-Trace
     node_x = []
     node_y = []
     for node in G.nodes():
@@ -65,7 +81,6 @@ def city_to_plotly(layout):
         marker=dict(showscale=False, color="#FFA07A", size=10, line=dict(width=2)),
     )
 
-    # Erzeuge die Plotly-Figur
     fig = go.Figure(
         data=[edge_trace, node_trace],
         layout=go.Layout(
@@ -82,36 +97,33 @@ def city_to_plotly(layout):
 # Initialisiere die Dash-App
 app = dash.Dash(__name__)
 
-# Erzeuge einen initialen city_layout mit Standardparametern
-default_layout = city_layout(intersection_count=4, street_count=4, seed=42)
+# Erzeuge einen initialen CityLayout.
+# Hier interpretieren wir "input-intersections" als Anzahl der Zeilen und "input-streets" als Anzahl der Spalten.
+default_layout = city_layout(grid_rows=4, grid_cols=4, seed=42)
 initial_fig = city_to_plotly(default_layout)
 
-# Definiere das Layout der App: linke Spalte für den Graph, rechte Spalte für die Parameter
+# Layout der Dash-App: Linke Spalte zeigt den Graph, rechte Spalte Eingabefelder.
 app.layout = html.Div(
     style={"display": "flex", "flexDirection": "row", "height": "100vh"},
     children=[
-        # Linke Spalte: Anzeige des Graphen
+        # Linke Spalte: Graphanzeige
         html.Div(
-            style={
-                "flex": "1",
-                "borderRight": "2px solid #ddd",
-                "padding": "10px",
-            },
+            style={"flex": "1", "borderRight": "2px solid #ddd", "padding": "10px"},
             children=[
                 dcc.Graph(id="city-graph", figure=initial_fig, style={"height": "100%"})
             ],
         ),
-        # Rechte Spalte: Eingabe der Parameter
+        # Rechte Spalte: Eingabefelder
         html.Div(
             style={"flex": "1", "padding": "10px"},
             children=[
                 html.H2("City Layout Generator"),
-                html.Label("Anzahl der Kreuzungen:"),
+                html.Label("Anzahl der Zeilen:"),
                 dcc.Input(id="input-intersections", type="number", value=4, min=1),
                 html.Br(),
                 html.Br(),
-                html.Label("Anzahl der Straßen:"),
-                dcc.Input(id="input-streets", type="number", value=4, min=0),
+                html.Label("Anzahl der Spalten:"),
+                dcc.Input(id="input-streets", type="number", value=4, min=1),
                 html.Br(),
                 html.Br(),
                 html.Label("Seed:"),
@@ -128,7 +140,7 @@ app.layout = html.Div(
 )
 
 
-# Callback: Aktualisiere den Graph, wenn der Button geklickt wird
+# Callback: Aktualisiere den Graph, wenn der Button geklickt wird.
 @app.callback(
     [Output("city-graph", "figure"), Output("error-message", "children")],
     [Input("generate-button", "n_clicks")],
@@ -138,19 +150,14 @@ app.layout = html.Div(
         State("input-seed", "value"),
     ],
 )
-def update_graph(n_clicks, intersections, streets, seed):
+def update_graph(n_clicks, grid_rows, grid_cols, seed):
     if n_clicks is None or n_clicks == 0:
-        # Noch kein Klick – keine Aktualisierung
         raise dash.exceptions.PreventUpdate
     try:
-        # Generiere einen neuen city_layout-Graphen
-        new_layout = city_layout(
-            intersection_count=intersections, street_count=streets, seed=seed
-        )
+        new_layout = city_layout(grid_rows=grid_rows, grid_cols=grid_cols, seed=seed)
         new_fig = city_to_plotly(new_layout)
         return new_fig, ""
     except Exception as e:
-        # Bei einem Fehler: Gib den Fehlertext aus, ohne den aktuellen Graphen zu verändern.
         return dash.no_update, f"Fehler: {str(e)}"
 
 
