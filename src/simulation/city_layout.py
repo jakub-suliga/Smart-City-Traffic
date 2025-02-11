@@ -5,163 +5,60 @@ from .street import Street
 
 
 class city_layout:
-    def __init__(
-        self, intersection_count: int = 4, street_count: int = 4, seed: int = 42
-    ):
-        self.intersection_count = intersection_count
-        self.street_count = street_count
+    def __init__(self, grid_rows: int = 4, grid_cols: int = 4, seed: int = 42):
+        """
+        Erzeugt ein toroidales Gitter mit grid_rows x grid_cols Kreuzungen.
+        Jede Kreuzung ist über wrap‑around mit genau 4 Straßen verbunden.
+        """
+        self.grid_rows = grid_rows
+        self.grid_cols = grid_cols
         self.seed = seed
 
-        self.intersections: List[Intersection] = []
+        # Hier speichern wir die Kreuzungen als 2D‑Array (Liste von Listen)
+        self.intersections: List[List[Intersection]] = []
+        # Alle erzeugten Straßen sammeln wir in einer Liste
         self.streets: List[Street] = []
 
-        self.city = self.create_city_graph(intersection_count, street_count, seed)
+        self._create_grid()
 
-    def create_city_graph(
-        self, intersection_count: int = 4, street_count: int = 4, seed: int = 42
-    ) -> None:
-        # Parameter prüfen
-        if intersection_count < 1:
-            raise ValueError("Es muss mindestens eine Kreuzung vorhanden sein.")
-        if street_count < intersection_count - 1:
-            raise ValueError(
-                f"Für einen zusammenhängenden Graphen sind mindestens {intersection_count - 1} Straßen notwendig."
-            )
-        if intersection_count >= 3 and street_count > (4 * intersection_count):
-            raise ValueError(
-                f"Für {intersection_count} Kreuzungen sind maximal {4 * intersection_count} Straßen möglich (planar)."
-            )
-
-        random.seed(seed)
-
-        # 1. Zufällige Positionen für die Kreuzungen generieren (z. B. im Bereich 0 bis 100)
-        positions: List[Tuple[float, float]] = []
-        for _ in range(intersection_count):
-            x = random.uniform(0, 100)
-            y = random.uniform(0, 100)
-            positions.append((x, y))
-
-        # 2. Intersection-Objekte erstellen und die Positionen setzen
+    def _create_grid(self) -> None:
+        random.seed(self.seed)
+        # 1. Erzeuge das 2D‑Array der Kreuzungen.
         self.intersections = []
-        for pos in positions:
-            inter = Intersection(streets=[])
-            inter.position = pos
-            self.intersections.append(inter)
+        for i in range(self.grid_rows):
+            row = []
+            for j in range(self.grid_cols):
+                inter = Intersection(streets=[])
+                # Hier setzen wir die Position; für eine natürliche Darstellung verwenden wir (x, y) = (j, -i)
+                inter.position = (j, -i)
+                row.append(inter)
+            self.intersections.append(row)
 
-        # Hilfsfunktion: Überprüft, ob sich zwei Strecken (als Segmente) schneiden (außer an gemeinsamen Endpunkten)
-        def segments_intersect(
-            p1: Tuple[float, float],
-            p2: Tuple[float, float],
-            p3: Tuple[float, float],
-            p4: Tuple[float, float],
-        ) -> bool:
-            # Falls Endpunkte identisch sind, wird nicht als Schnitt gewertet.
-            if p1 == p3 or p1 == p4 or p2 == p3 or p2 == p4:
-                return False
+        # 2. Erzeuge die Straßen so, dass jede Kreuzung exakt 4 Verbindungen erhält.
+        # Wir fügen für jede Kreuzung zwei Kanten hinzu – eine nach Osten und eine nach Süden –
+        # wobei durch wrap‑around auch die westlichen bzw. nördlichen Verbindungen abgedeckt werden.
+        for i in range(self.grid_rows):
+            for j in range(self.grid_cols):
+                current = self.intersections[i][j]
 
-            def orientation(
-                a: Tuple[float, float], b: Tuple[float, float], c: Tuple[float, float]
-            ) -> int:
-                val = (b[1] - a[1]) * (c[0] - b[0]) - (b[0] - a[0]) * (c[1] - b[1])
-                if abs(val) < 1e-9:
-                    return 0  # kollinear
-                return (
-                    1 if val > 0 else 2
-                )  # 1: im Uhrzeigersinn, 2: gegen den Uhrzeigersinn
+                # Verbindung nach Osten (wrap‑around, falls j == grid_cols‑1)
+                east_j = (j + 1) % self.grid_cols
+                east_neighbor = self.intersections[i][east_j]
+                length_east = random.randint(50, 300)
+                speed_limit_east = random.randint(30, 120)
+                street_east = Street(length_east, speed_limit_east, (i, j), (i, east_j))
+                self.streets.append(street_east)
+                current.streets.append(street_east)
+                east_neighbor.streets.append(street_east)
 
-            def on_segment(
-                a: Tuple[float, float], b: Tuple[float, float], c: Tuple[float, float]
-            ) -> bool:
-                if min(a[0], c[0]) <= b[0] <= max(a[0], c[0]) and min(a[1], c[1]) <= b[
-                    1
-                ] <= max(a[1], c[1]):
-                    return True
-                return False
-
-            o1 = orientation(p1, p2, p3)
-            o2 = orientation(p1, p2, p4)
-            o3 = orientation(p3, p4, p1)
-            o4 = orientation(p3, p4, p2)
-
-            if o1 != o2 and o3 != o4:
-                return True
-
-            if o1 == 0 and on_segment(p1, p3, p2):
-                return True
-            if o2 == 0 and on_segment(p1, p4, p2):
-                return True
-            if o3 == 0 and on_segment(p3, p1, p4):
-                return True
-            if o4 == 0 and on_segment(p3, p2, p4):
-                return True
-
-            return False
-
-        # 3. Einen zufälligen Spannbaum (mit intersection_count - 1 Kanten) erzeugen, um Zusammenhängigkeit zu garantieren.
-        available = list(range(intersection_count))
-        connected = [available.pop(0)]  # Starte mit der ersten Kreuzung
-        spanning_edges: List[Tuple[int, int]] = []
-
-        while available:
-            new_vertex = available.pop(random.randint(0, len(available) - 1))
-            existing_vertex = random.choice(connected)
-            spanning_edges.append((existing_vertex, new_vertex))
-            connected.append(new_vertex)
-
-        # Die Straßen des Spannbaums erzeugen
-        for i, j in spanning_edges:
-            length = random.randint(50, 300)  # zufällige Länge
-            speed_limit = random.randint(
-                30, 120
-            )  # zufällige Geschwindigkeitsbegrenzung
-            street = Street(length, speed_limit, i, j)
-            self.streets.append(street)
-            self.intersections[i].streets.append(street)
-            self.intersections[j].streets.append(street)
-
-        # 4. Zusätzliche Straßen hinzufügen, bis street_count erreicht ist.
-        extra_edges_needed = street_count - (intersection_count - 1)
-        candidates = []
-        for i in range(intersection_count):
-            for j in range(i + 1, intersection_count):
-                # Falls die Kante bereits im Spannbaum existiert, überspringen.
-                if (i, j) in spanning_edges or (j, i) in spanning_edges:
-                    continue
-                candidates.append((i, j))
-        random.shuffle(candidates)
-
-        extra_edges_added = 0
-        for i, j in candidates:
-            if extra_edges_added >= extra_edges_needed:
-                break
-            p1 = self.intersections[i].position
-            p2 = self.intersections[j].position
-
-            # Prüfen, ob der neue Streckenabschnitt mit einer bereits existierenden Straße (ohne gemeinsamen Knoten) schneidet.
-            conflict = False
-            for street in self.streets:
-                a = self.intersections[street.start].position
-                b = self.intersections[street.end].position
-                # Gemeinsame Endpunkte sind erlaubt.
-                if i in (street.start, street.end) or j in (street.start, street.end):
-                    continue
-                if segments_intersect(p1, p2, a, b):
-                    conflict = True
-                    break
-            if conflict:
-                continue
-
-            # Kein Konflikt – füge die neue Straße hinzu.
-            length = random.randint(50, 300)
-            speed_limit = random.randint(30, 120)
-            new_street = Street(length, speed_limit, i, j)
-            self.streets.append(new_street)
-            self.intersections[i].streets.append(new_street)
-            self.intersections[j].streets.append(new_street)
-            extra_edges_added += 1
-
-        if extra_edges_added < extra_edges_needed:
-            print(
-                f"Warnung: Es konnten nur {extra_edges_added} zusätzliche Straßen hinzugefügt werden, "
-                f"anstatt der gewünschten {extra_edges_needed} (Planaritätsbedingte Einschränkung)."
-            )
+                # Verbindung nach Süden (wrap‑around, falls i == grid_rows‑1)
+                south_i = (i + 1) % self.grid_rows
+                south_neighbor = self.intersections[south_i][j]
+                length_south = random.randint(50, 300)
+                speed_limit_south = random.randint(30, 120)
+                street_south = Street(
+                    length_south, speed_limit_south, (i, j), (south_i, j)
+                )
+                self.streets.append(street_south)
+                current.streets.append(street_south)
+                south_neighbor.streets.append(street_south)
