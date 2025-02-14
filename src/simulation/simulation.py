@@ -14,6 +14,8 @@ class Simulator:
         self._create_vehicles()
 
     def _create_vehicles(self) -> None:
+        streets = self.city_layout.streets
         random.seed(self.seed)
-        for _ in range(self.vehicle_count):
+        for _, street in zip(range(self.vehicle_count), k=len(streets)):
             vehicle = Vehicle()
+            street.add_vehicle(vehicle)
