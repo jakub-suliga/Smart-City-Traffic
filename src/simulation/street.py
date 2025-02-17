@@ -48,13 +48,14 @@ class Street:
             or vehicle_number < 0
             or self.num_vehicles + vehicle_number > self.length
         ):
-            raise ValueError("Invalid number of vehicles")
+            return False
         for i in range(vehicle_number):
             vehicle = Vehicle()
             added = False
             while not added:
                 pos = random.randint(0, self.length - 1)
                 added = self._add_vehicle_pos(vehicle, pos)
+        return True
 
     def remove_vehicle(self) -> Optional[Vehicle]:
         """
