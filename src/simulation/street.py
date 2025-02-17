@@ -20,14 +20,9 @@ class Street:
         self.num_vehicles = 0
 
     def get_vehicle_count(self) -> int:
-        """Returns the number of vehicles on the street."""
         return sum(1 for v in self.vehicles if v is not None)
 
     def get_last_vehicle(self) -> Optional[Vehicle]:
-        """
-        Returns the vehicle in the last occupied slot (highest index)
-        or None if there are no vehicles.
-        """
         return self.vehicles[-1]
 
     def _add_vehicle_pos(self, vehicle: Vehicle, pos: int) -> bool:
@@ -58,23 +53,11 @@ class Street:
         return True
 
     def remove_vehicle(self) -> Optional[Vehicle]:
-        """
-        Removes the vehicle at the last occupied position (highest index)
-        and returns it. If no vehicle is present, returns None.
-        """
         removed_vehicle = self.vehicles[-1]
         self.vehicles[-1] = None
         return removed_vehicle
 
     def simulate(self) -> None:
-        """
-        Simulates one time step where each vehicle attempts to move one slot forward:
-          - If the cell in front is occupied or the vehicle is already at the end,
-            it remains in place.
-          - Otherwise, it moves one slot forward.
-        Movements are performed simultaneously; decisions are based on the old configuration,
-        and the result is stored in a new state list.
-        """
         new_state: List[Optional[Vehicle]] = [None] * self.length
         for i in reversed(range(self.length)):
             vehicle = self.vehicles[i]
