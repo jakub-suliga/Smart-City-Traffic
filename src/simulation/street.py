@@ -1,3 +1,4 @@
+import random
 from typing import Optional, List
 from .vehicle import Vehicle
 
@@ -50,9 +51,10 @@ class Street:
             raise ValueError("Invalid number of vehicles")
         for i in range(vehicle_number):
             vehicle = Vehicle()
-            added = True
-            while added:
-                added = self._add_vehicle_pos(vehicle)
+            added = False
+            while not added:
+                pos = random.randint(0, self.length - 1)
+                added = self._add_vehicle_pos(vehicle, pos)
 
     def remove_vehicle(self) -> Optional[Vehicle]:
         """
