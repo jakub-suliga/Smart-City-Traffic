@@ -21,3 +21,6 @@ class Simulator:
             count = random.randint(1, self.vehicle_count)
             if street.create_vehicle(count):
                 self.vehicle_count -= count
+
+    def simulate(self, steps: int = 1) -> None:
+        pass
