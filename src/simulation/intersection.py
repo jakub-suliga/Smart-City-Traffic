@@ -10,10 +10,6 @@ class Intersection:
         self.streets = streets
 
     def simulate(self, street_index: int) -> None:
-        """
-        Simulates a single step for the intersection on the given street.
-        Moves the vehicle from the specified street to a target street based on its destination.
-        """
         vehicle: Optional[Vehicle] = self.streets[street_index].get_last_vehicle()
         if vehicle is None:
             return
