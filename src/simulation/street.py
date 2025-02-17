@@ -8,6 +8,7 @@ class Street:
     start: int
     end: int
     vehicles: List[Optional[Vehicle]]
+    num_vehicles: int
 
     def __init__(self, length: int, speed_limit: int, start: int, end: int) -> None:
         self.length = length
@@ -15,6 +16,7 @@ class Street:
         self.start = start
         self.end = end
         self.vehicles = [None] * length
+        self.num_vehicles = 0
 
     def get_vehicle_count(self) -> int:
         """Returns the number of vehicles on the street."""
@@ -27,16 +29,30 @@ class Street:
         """
         return self.vehicles[-1]
 
-    def add_vehicle(self, vehicle: Vehicle) -> bool:
-        """
-        Inserts a vehicle at the starting position (index 0).
-        If that position is already occupied, returns False.
-        Otherwise, places the vehicle and returns True.
-        """
-        if self.vehicles[0] is not None:
+    def _add_vehicle_pos(self, vehicle: Vehicle, pos: int) -> bool:
+        if self.vehicles[pos] is not None:
             return False
-        self.vehicles[0] = vehicle
+        self.vehicles[pos] = vehicle
         return True
+
+    def add_vehicle(
+        self,
+        vehicle: Vehicle,
+    ) -> bool:
+        return self._add_vehicle_pos(vehicle, 0)
+
+    def create_vehicle(self, vehicle_number: int) -> bool:
+        if (
+            vehicle_number > self.length
+            or vehicle_number < 0
+            or self.num_vehicles + vehicle_number > self.length
+        ):
+            raise ValueError("Invalid number of vehicles")
+        for i in range(vehicle_number):
+            vehicle = Vehicle()
+            added = True
+            while added:
+                added = self._add_vehicle_pos(vehicle)
 
     def remove_vehicle(self) -> Optional[Vehicle]:
         """
