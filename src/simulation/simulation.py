@@ -10,7 +10,6 @@ class Simulator:
         self.vehicle_count = vehicle_count
         self.seed = seed
         self.city_layout = city_layout(seed=self.seed)
-
         self._create_vehicles()
 
     def _create_vehicles(self) -> None:
@@ -22,5 +21,11 @@ class Simulator:
             if street.create_vehicle(count):
                 self.vehicle_count -= count
 
-    def simulate(self, steps: int = 1) -> None:
-        pass
+    def simulate(self) -> None:
+        for street in self.city_layout.streets:
+            street.simulate()
+        for intersection in self.city_layout.intersections:
+            intersection.simulate(0)
+            intersection.simulate(1)
+            intersection.simulate(2)
+            intersection.simulate(3)
