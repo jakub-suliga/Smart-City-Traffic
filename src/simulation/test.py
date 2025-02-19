@@ -814,5 +814,6 @@ if __name__ == "__main__":
     sim = Simulator(place_name=place, dist_m=dist_km * 100)
 
     print("Starte Simulation (50 Schritte, dt=1.0s)...")
+
     sim.run(steps=50, dt=1.0)
     print(f"Fertig. {len(sim.vehicles)} Fahrzeuge verbleiben im System.")
