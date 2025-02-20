@@ -449,32 +449,6 @@ class Vehicle:
 ###############################################################################
 
 
-def clip_line_at_polygon(
-    line: shapely.geometry.LineString, polygon: shapely.geometry.Polygon
-) -> Optional[shapely.geometry.LineString]:
-    """
-    Schneidet eine Linie an polygon zurecht.
-    Gibt None zurück, wenn komplett outside.
-    """
-    inter = line.intersection(polygon)
-    if inter.is_empty:
-        return None
-    if isinstance(inter, shapely.geometry.LineString):
-        return inter
-    elif isinstance(inter, shapely.geometry.MultiLineString):
-        # Nimm das längste Segment
-        longest_part = max(inter.geoms, key=lambda g: g.length)
-        return longest_part
-    elif isinstance(inter, shapely.geometry.GeometryCollection):
-        # Filter LineStrings
-        lines = [g for g in inter.geoms if isinstance(g, shapely.geometry.LineString)]
-        if not lines:
-            return None
-        longest_part = max(lines, key=lambda g: g.length)
-        return longest_part
-    return None
-
-
 # Beispielhafte globale Settings
 ox.settings.timeout = 300
 ox.settings.log_console = True
