@@ -1,3 +1,7 @@
+from src.simulation.TrafficLight import TrafficLightController
+from typing import Optional
+
+
 class Intersection:
     """
     Intersection repräsentiert einen Knoten.
