@@ -4,7 +4,7 @@ import shapely
 import shapely.geometry
 import shapely.ops
 
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 
 class Street:
