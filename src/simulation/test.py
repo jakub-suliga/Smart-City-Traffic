@@ -475,120 +475,75 @@ def clip_line_at_polygon(
     return None
 
 
-# OSMnx Settings: Timeout, Logging einschalten
-ox.settings.timeout = 300  # 300 Sekunden Timeout
-ox.settings.log_console = True  # Konsolen-Logs (Overpass-Anfragen etc.)
-ox.settings.use_cache = True  # Ergebnisse lokal cachen, beschleunigt Folgeläufe
+# Beispielhafte globale Settings
+ox.settings.timeout = 300
+ox.settings.log_console = True
+ox.settings.use_cache = True
 
 
 def build_city_graph(
-    place_name: str, dist_m=2000
+    dist_m: float = 2000,
 ) -> Tuple[Dict[str, "Intersection"], Dict[int, "Street"]]:
     """
-    Lädt einen Ausschnitt (Umkreis dist_m) rund um 'place_name' mit OSMnx,
-    projiziert das Ganze, clippt es an einen Kreis-Puffer und erzeugt
-    unsere Intersection-/Street-Struktur.
+    Lädt einen Ausschnitt (Umkreis dist_m) rund um feste Koordinaten in Berlin
+    und erzeugt daraus Intersection-/Street-Objekte (mit turn:lanes, Ampeln etc.).
 
-    Wichtige Änderungen:
-    - Kein Alexanderplatz-Fallback mehr
-    - Falls place_name ein (Multi)Polygon liefert, wird der centroid genommen
-    - Logging, Timeout, Cache sind aktiv
+    1) Nutzt `ox.graph_from_point`, anstatt geocode_to_gdf.
+    2) Projiziert den Graph in Meter-Koordinaten.
+    3) Liest Knoten und Kanten aus und baut:
+       - Intersection-Objekte (einfache Knoten)
+       - Street-Objekte (Kanten)
+       - Ampeln, falls 'turn:lanes' oder 'lanes' existieren.
+    4) Gibt intersection_map, streets_map zurück.
     """
 
-    print(f"[build_city_graph] Starte für: {place_name}, dist_m={dist_m} m")
-
-    # 1) Geometrie via geocode_to_gdf
-    print("[build_city_graph] Ermittele Geometrie via ox.geocode_to_gdf...")
-    center_gdf = ox.geocode_to_gdf(place_name)
-
-    if center_gdf.empty:
-        print(
-            f"[build_city_graph] WARNUNG: Kein Ergebnis für place_name='{place_name}'!"
-        )
-        return {}, {}
-
-    geom = center_gdf.geometry.iloc[0]
-    print(f"  -> Geometrie: {geom}, Typ={geom.geom_type}")
-
-    # (A) Falls kein Point => centroid
-    if geom.geom_type != "Point":
-        print(
-            f"[build_city_graph] '{place_name}' ist kein Point (Typ={geom.geom_type}). Nehme den Centroid."
-        )
-        geom = geom.centroid
-        print(f"  -> Neuer Mittelpunkt: {geom}, Typ={geom.geom_type}")
-
-    # 2) Kreis-Puffer
-    center_point = geom
-    boundary_polygon = center_point.buffer(dist_m)
-    if not boundary_polygon.is_valid:
-        print("[build_city_graph] FEHLER: boundary_polygon ist ungültig.")
-        return {}, {}
-    print(f"  -> boundary_polygon Fläche={boundary_polygon.area:.2f} m^2")
-
-    bigger_polygon = boundary_polygon.buffer(
-        500.0
-    )  # etwas größer, damit Randstraßen nicht fehlen
-    print(f"  -> bigger_polygon Fläche={bigger_polygon.area:.2f} m^2")
-
-    # 3) Graph laden
-    print("[build_city_graph] Starte ox.graph_from_polygon(...)")
-    start_t = time.time()
-    try:
-        G = ox.graph_from_polygon(
-            polygon=bigger_polygon, simplify=False, network_type="drive"
-        )
-    except Exception as e:
-        print(f"[build_city_graph] FEHLER bei graph_from_polygon: {e}")
-        return {}, {}
-    duration = time.time() - start_t
-    print(f"[build_city_graph] graph_from_polygon fertig nach {duration:.2f} s.")
-
-    if not G or len(G.nodes) == 0:
-        print("[build_city_graph] WARNUNG: Graph ist leer (keine Nodes).")
-        return {}, {}
-
-    # 4) Projektion in Meter
-    print("[build_city_graph] Projiziere Graph mit ox.project_graph...")
-    G = ox.project_graph(G)
-    print(f"  -> Projektierter Graph: #Nodes={len(G.nodes)}, #Edges={len(G.edges)}")
-
-    # --- Ab hier wie gehabt ---
-    # Intersection- und Street-Klassen müssten vorher definiert sein
-    # (oder du importierst sie in dieses Modul).
-
-    # 5) Knoten im boundary_polygon halten
-    node_dict: Dict[str, Tuple[float, float]] = {}
-    kept_nodes = 0
-    for node, data in G.nodes(data=True):
-        x = data["x"]
-        y = data["y"]
-        pt = shapely.geometry.Point(x, y)
-        if boundary_polygon.contains(pt):
-            node_dict[str(node)] = (x, y)
-            kept_nodes += 1
-    print(f"  -> {kept_nodes} Knoten innerhalb dist_m={dist_m} beibehalten.")
-
-    # 6) Kanten clippen und Street-Objekte bauen
-    streets_map: Dict[int, "Street"] = {}
-    street_id_counter = 1
-    edges_used = 0
+    # 1) Feste Koordinaten für Berlin-Mitte, z.B. Brandenburger Tor
+    berlin_lat = 52.52
+    berlin_lon = 13.405
 
     print(
-        f"[build_city_graph] Durchsuche {len(G.edges)} Kanten, clippe an boundary_polygon..."
+        f"[build_city_graph] Lade Graph für Berlin-Koords ({berlin_lat}, {berlin_lon}), dist={dist_m} m"
     )
+
+    # 2) Laden via graph_from_point
+    G = ox.graph_from_point(
+        center_point=(berlin_lat, berlin_lon),
+        dist=dist_m,
+        dist_type="bbox",  # oder 'network'
+        simplify=False,
+        network_type="drive",
+    )
+    print(f"   -> Geladener Graph: #Nodes={len(G.nodes)}, #Edges={len(G.edges)}")
+
+    # 3) Projektion
+    print("[build_city_graph] Projiziere Graph mit ox.project_graph...")
+    G = ox.project_graph(G)
+    print(f"   -> Projektierter Graph: #Nodes={len(G.nodes)}, #Edges={len(G.edges)}")
+
+    # Jetzt bauen wir unsere Strukturen:
+    intersection_map: Dict[str, "Intersection"] = {}
+    streets_map: Dict[int, "Street"] = {}
+
+    # 4) Alle Knoten in Intersection-Objekte fassen
+    for node_id, data in G.nodes(data=True):
+        # node_id ist meist eine Zahl, wir machen zur Sicherheit einen String draus
+        str_id = str(node_id)
+        # Intersection ist eine einfache Klasse, die nur 'id' speichert und ggf. Ampel
+        intersection_map[str_id] = Intersection(str_id)
+
+    # 5) Alle Kanten auswerten
+    street_id_counter = 1
     for u, v, key, edata in G.edges(keys=True, data=True):
+        # Koordinaten der Polylinie (falls geometry fehlt, nur direkter Start->End)
         geom_line = edata.get("geometry", None)
         if geom_line is None:
             x1, y1 = G.nodes[u]["x"], G.nodes[u]["y"]
             x2, y2 = G.nodes[v]["x"], G.nodes[v]["y"]
             geom_line = shapely.geometry.LineString([(x1, y1), (x2, y2)])
 
-        clipped = clip_line_at_polygon(geom_line, boundary_polygon)
-        if not clipped:
-            continue
-        edges_used += 1
+        coords_list = list(geom_line.coords)
 
+        # Geschwindigkeitslimit
         maxspeed = edata.get("maxspeed", "50")
         if isinstance(maxspeed, list):
             maxspeed = maxspeed[0]
@@ -596,12 +551,14 @@ def build_city_graph(
             ms_val = float(maxspeed)
         except:
             ms_val = 50.0
-        speed_limit = ms_val / 3.6
+        speed_limit = ms_val / 3.6  # km/h -> m/s
 
+        # turn:lanes
         tlanes = edata.get("turn:lanes", "")
         if isinstance(tlanes, list):
             tlanes = tlanes[0]
 
+        # lanes
         lanes_tag = edata.get("lanes", 1)
         try:
             lanes_tag = int(lanes_tag)
@@ -610,32 +567,18 @@ def build_city_graph(
 
         parsed = parse_turn_lanes(tlanes)
         nlanes = max(lanes_tag, len(parsed))
+        # Wenn turn:lanes weniger Spuren angibt als "lanes", füllen wir 'through' auf:
         while len(parsed) < nlanes:
             parsed.append(["through"])
 
-        coords_list = list(clipped.coords)
-        x_u, y_u = coords_list[0]
-        x_v, y_v = coords_list[-1]
-
-        su = str(u)
-        if not boundary_polygon.contains(shapely.geometry.Point(x_u, y_u)):
-            su = f"pseudo_{u}_{v}_start_{street_id_counter}"
-
-        sv = str(v)
-        if not boundary_polygon.contains(shapely.geometry.Point(x_v, y_v)):
-            sv = f"pseudo_{v}_{u}_end_{street_id_counter}"
-
-        # pseudo-Knoten ggf. eintragen
-        if su not in node_dict:
-            node_dict[su] = (x_u, y_u)
-        if sv not in node_dict:
-            node_dict[sv] = (x_v, y_v)
-
         # Street-Objekt anlegen
+        str_u = str(u)
+        str_v = str(v)
+
         st = Street(
             st_id=street_id_counter,
-            start_node=su,
-            end_node=sv,
+            start_node=str_u,
+            end_node=str_v,
             coords=coords_list,
             speed_limit=speed_limit,
             lane_dirs=parsed,
@@ -643,29 +586,25 @@ def build_city_graph(
         streets_map[street_id_counter] = st
         street_id_counter += 1
 
-        # Bidirektionale Kante?
+        # Prüfen, ob die Straße bidirektional ist
         oneway = edata.get("oneway", False)
+        # Falls oneway == False (oder "False", "0"), legen wir eine Rückrichtung an
         if oneway in [False, "False", 0, "0"]:
             rev_coords = list(reversed(coords_list))
             st2 = Street(
                 st_id=street_id_counter,
-                start_node=sv,
-                end_node=su,
+                start_node=str_v,
+                end_node=str_u,
                 coords=rev_coords,
                 speed_limit=speed_limit,
-                lane_dirs=parsed,
+                lane_dirs=parsed,  # gleiche Spur-Infos
             )
             streets_map[street_id_counter] = st2
             street_id_counter += 1
 
-    print(f"  -> {edges_used} Kanten erfolgreich geclippt/übernommen.")
-
-    # 7) Intersection-Objekte
-    intersection_map: Dict[str, "Intersection"] = {}
-    for nid, (xx, yy) in node_dict.items():
-        intersection_map[nid] = Intersection(nid)
-
-    # Ampeln anlegen
+    # 6) Ampeln an den Knoten anlegen
+    # Dazu sammeln wir: pro Node => Liste aller (street_id, lane_index),
+    # die dort enden.
     in_spurs: Dict[str, List[Tuple[int, int]]] = {}
     for st_id, st_obj in streets_map.items():
         end_n = st_obj.end_node
@@ -674,6 +613,7 @@ def build_city_graph(
         for ln in range(st_obj.num_lanes):
             in_spurs[end_n].append((st_id, ln))
 
+    # Für jeden Knoten (Intersection) schauen wir, ob er eingehende Spuren hat
     for n_id, inter in intersection_map.items():
         if n_id in in_spurs:
             inc = in_spurs[n_id]
@@ -697,7 +637,7 @@ def build_city_graph(
 class Simulator:
     def __init__(self, place_name: str, dist_m=5000):
         # 1) Baue City Graph
-        self.intersections, self.streets = build_city_graph(place_name, dist_m)
+        self.intersections, self.streets = build_city_graph(dist_m)
         # 2) adjacency
         self.adjacency = build_adjacency(self.intersections, self.streets, bidir=False)
 
@@ -799,7 +739,7 @@ if __name__ == "__main__":
     place = "Berlin, Germany"  # Beispiel-Stadt
     dist_km = 5
     print(f"Erstelle clipped City-Graph für {place}, Umkreis {dist_km} km ...")
-    sim = Simulator(place_name=place, dist_m=dist_km * 10)
+    sim = Simulator(place_name=place, dist_m=dist_km * 1000)
 
     print("Starte Simulation (50 Schritte, dt=1.0s)...")
 
