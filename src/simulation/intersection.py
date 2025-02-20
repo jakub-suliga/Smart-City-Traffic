@@ -1,27 +1,20 @@
-from typing import List, Optional
-from .street import Street
-from .vehicle import Vehicle
-
-
 class Intersection:
-    streets: List[Street]
+    """
+    Intersection repräsentiert einen Knoten.
+    Hat eine TrafficLightController-Instanz (falls incoming Spuren vorhanden).
+    """
 
-    def __init__(self, streets: List[Street]) -> None:
-        self.streets = streets
+    def __init__(self, node_id):
+        self.id = node_id
+        self.traffic_lights: Optional[TrafficLightController] = None
 
-    def simulate(self, street_index: int) -> None:
-        vehicle: Optional[Vehicle] = self.streets[street_index].get_last_vehicle()
-        if vehicle is None:
-            return
+    def set_traffic_lights(self, tl: TrafficLightController):
+        self.traffic_lights = tl
 
-        dest = vehicle.get_destination()
-        if dest == 0:
-            target_index = (street_index + 1) % 4
-        elif dest == 1:
-            target_index = (street_index + 2) % 4
-        else:
-            target_index = (street_index + 3) % 4
-
-        added = self.streets[target_index].add_vehicle(removed_vehicle)
-        if added:
-            removed_vehicle = self.streets[street_index].remove_vehicle()
+    def can_vehicle_enter(self, street_id: int, lane_index: int) -> bool:
+        """
+        Prüft, ob Ampelphase = Grün/Gelb für (street_id, lane_index).
+        """
+        if not self.traffic_lights:
+            return True
+        return self.traffic_lights.is_green_or_yellow(street_id, lane_index)
