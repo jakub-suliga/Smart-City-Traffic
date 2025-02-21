@@ -38,10 +38,6 @@ VEHICLE_PROFILES = {
 }
 
 
-def distance_2d(p1: Tuple[float, float], p2: Tuple[float, float]) -> float:
-    return math.hypot(p2[0] - p1[0], p2[1] - p1[1])
-
-
 ###############################################################################
 # 2) TURN-LANES-AUSWERTUNG
 ###############################################################################
@@ -709,13 +705,3 @@ class Simulator:
 ###############################################################################
 # 10) HAUPTPROGRAMM
 ###############################################################################
-if __name__ == "__main__":
-    place = "Berlin, Germany"  # Beispiel-Stadt
-    dist_km = 5
-    print(f"Erstelle clipped City-Graph für {place}, Umkreis {dist_km} km ...")
-    sim = Simulator(place_name=place, dist_m=dist_km * 1000)
-
-    print("Starte Simulation (50 Schritte, dt=1.0s)...")
-
-    sim.run(steps=50, dt=1.0)
-    print(f"Fertig. {len(sim.vehicles)} Fahrzeuge verbleiben im System.")
