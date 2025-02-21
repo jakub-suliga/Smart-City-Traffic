@@ -1,4 +1,4 @@
-from src.simulation.TrafficLight import TrafficLightController
+from .TrafficLight import TrafficLightController
 from typing import Optional
 
 
