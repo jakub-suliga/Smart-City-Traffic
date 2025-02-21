@@ -1,11 +1,8 @@
 import math
-import osmnx as ox
-import networkx as nx
-
 from typing import Dict, List, Optional
 
-from src.simulation.intersection import Intersection
-from src.simulation.street import Street
+from .intersection import Intersection
+from .street import Street
 
 VEHICLE_PROFILES = {
     "raser": (1.50, 0.8),
