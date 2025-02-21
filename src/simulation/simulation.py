@@ -199,7 +199,7 @@ class Simulator:
             center_point=(berlin_lat, berlin_lon),
             dist=dist_m,
             dist_type="bbox",  # oder 'network'
-            simplify=False,
+            simplify=True,
             network_type="drive",
         )
         print(f"   -> Geladener Graph: #Nodes={len(G.nodes)}, #Edges={len(G.edges)}")
@@ -219,8 +219,10 @@ class Simulator:
         for node_id, data in G.nodes(data=True):
             # node_id ist meist eine Zahl, wir machen zur Sicherheit einen String draus
             str_id = str(node_id)
+            x_val = data.get("x", 0.0)
+            y_val = data.get("y", 0.0)
             # Intersection ist eine einfache Klasse, die nur 'id' speichert und ggf. Ampel
-            intersection_map[str_id] = Intersection(str_id)
+            intersection_map[str_id] = Intersection(str_id, x=x_val, y=y_val)
 
         # 5) Alle Kanten auswerten
         street_id_counter = 1
