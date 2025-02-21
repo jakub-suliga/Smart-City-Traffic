@@ -348,15 +348,3 @@ class Simulator:
                     directions.append(d)
             result.append(directions)
         return result
-
-
-if __name__ == "__main__":
-    place = "Berlin, Germany"  # Beispiel-Stadt
-    dist_km = 5
-    print(f"Erstelle clipped City-Graph für {place}, Umkreis {dist_km} km ...")
-    sim = Simulator(place_name=place, dist_m=dist_km * 1000)
-
-    print("Starte Simulation (50 Schritte, dt=1.0s)...")
-
-    sim.run(steps=50, dt=1.0)
-    print(f"Fertig. {len(sim.vehicles)} Fahrzeuge verbleiben im System.")
