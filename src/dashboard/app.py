@@ -19,10 +19,10 @@ def position_on_street(street, s):
 def main():
     # Erzeuge eine Simulator-Instanz
     # place_name = "Berlin, Germany" und dist_m = 5000 als Beispiel
-    sim = Simulator(place_name="Berlin, Germany", dist_m=5000)
+    sim = Simulator(place_name="Berlin, Germany", dist_m=500)
 
     # Starte initial ein paar Fahrzeuge
-    for _ in range(10):
+    for _ in range(30):
         sim.spawn_vehicle()
 
     # Erstelle eine Matplotlib-Figur
