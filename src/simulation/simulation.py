@@ -11,10 +11,10 @@ import shapely.ops
 
 from typing import Dict, List, Tuple, Optional
 
-from src.simulation.TrafficLight import TrafficLightController
-from src.simulation.intersection import Intersection
-from src.simulation.street import Street
-from src.simulation.vehicle import VEHICLE_PROFILES, Vehicle
+from .TrafficLight import TrafficLightController
+from .intersection import Intersection
+from .street import Street
+from .vehicle import VEHICLE_PROFILES, Vehicle
 
 
 class Simulator:
@@ -38,7 +38,7 @@ class Simulator:
         self.next_vid = 1000
 
     def dijkstra_route(
-        adj: Dict[str, List[Tuple[str, float, int]]], start_n: str, goal_n: str
+        self, adj: Dict[str, List[Tuple[str, float, int]]], start_n: str, goal_n: str
     ) -> List[int]:
         """
         Gibt eine Liste von Street-IDs zurück, die vom Start- zum Ziel-Knoten führen.
@@ -143,7 +143,10 @@ class Simulator:
                 print(f"Step {step} -> #Vehicles={len(self.vehicles)}")
 
     def build_adjacency(
-        intersections: Dict[str, Intersection], streets: Dict[int, Street], bidir=False
+        self,
+        intersections: Dict[str, Intersection],
+        streets: Dict[int, Street],
+        bidir=False,
     ) -> Dict[str, List[Tuple[str, float, int]]]:
         """
         Erzeugt Adjazenz: node_id -> [(neighbor_node, cost, street_id), ...].
@@ -316,7 +319,7 @@ class Simulator:
         )
         return intersection_map, streets_map
 
-    def parse_turn_lanes(turn_lanes_str: str) -> List[List[str]]:
+    def parse_turn_lanes(self, turn_lanes_str: str) -> List[List[str]]:
         """
         Parst z. B. "left|through;right" in:
         [ ["left"], ["through","right"] ]
@@ -345,3 +348,15 @@ class Simulator:
                     directions.append(d)
             result.append(directions)
         return result
+
+
+if __name__ == "__main__":
+    place = "Berlin, Germany"  # Beispiel-Stadt
+    dist_km = 5
+    print(f"Erstelle clipped City-Graph für {place}, Umkreis {dist_km} km ...")
+    sim = Simulator(place_name=place, dist_m=dist_km * 1000)
+
+    print("Starte Simulation (50 Schritte, dt=1.0s)...")
+
+    sim.run(steps=50, dt=1.0)
+    print(f"Fertig. {len(sim.vehicles)} Fahrzeuge verbleiben im System.")
