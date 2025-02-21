@@ -1,6 +1,3 @@
-import osmnx as ox
-import networkx as nx
-
 from typing import Dict, List, Tuple
 
 # Ampelphasen
