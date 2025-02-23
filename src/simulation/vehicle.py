@@ -7,7 +7,7 @@ from .street import Street
 VEHICLE_PROFILES = {
     "raser": (1.50, 0.8),
     "normal": (1.00, 1.0),
-    "slow_driver": (0.75, 1.5),
+    "slow_driver": (0.75, 1.0),
 }
 
 
