@@ -17,6 +17,7 @@ class Vehicle:
       - current_street
       - lane_index
       - position_s
+      -
       - route (Liste Street-IDs)
       - reaktionszeit, speed_factor, ...
       - logik, ob turn_dir 'left'/'right' => passendes Spurwechseln,
