@@ -8,16 +8,6 @@ from typing import Dict, List, Tuple
 
 
 class Street:
-    """
-    Street speichert:
-      - start_node, end_node
-      - points (Polylinie)
-      - length
-      - speed_limit (m/s)
-      - num_lanes
-      - turn_lanes_info: pro Spur => set of directions (z. B. {'left','through'})
-    """
-
     def __init__(
         self,
         st_id: int,
@@ -27,11 +17,6 @@ class Street:
         speed_limit: float,
         lane_dirs: List[List[str]],
     ):
-        """
-        lane_dirs: turn:lanes-Interpretation pro Spur. Bsp:
-                   [ ['left'], ['through','right'] ]
-        num_lanes = len(lane_dirs)
-        """
         self.id = st_id
         self.start_node = start_node
         self.end_node = end_node

@@ -22,21 +22,11 @@ class TrafficLightPhase:
 
 
 class TrafficLightController:
-    """
-    Spur-spezifische Ampeln. Alle Spuren haben standardmäßig denselben
-    globalen Phasenzyklus. Man kann es aber erweitern (z. B. separate Gruppen).
-    """
-
     def __init__(self, incoming_spurs: List[Tuple[int, int]]):
-        """
-        incoming_spurs: Liste aller (street_id, lane_index),
-        die zu dieser Intersection führen.
-        """
         self.lights: Dict[Tuple[int, int], TrafficLightPhase] = {}
         for sp in incoming_spurs:
             self.lights[sp] = TrafficLightPhase(phase=PHASE_RED, time_in_phase=0.0)
 
-        # Einfach: Alle Spuren gleichzeitig
         self.global_phase = PHASE_RED
         self.time_in_global_phase = 0.0
 
@@ -55,7 +45,6 @@ class TrafficLightController:
             elif self.global_phase == PHASE_REDYELLOW:
                 self.global_phase = PHASE_GREEN
 
-        # Setze diese globale Phase für alle Spuren
         for sp, tl in self.lights.items():
             tl.phase = self.global_phase
             tl.time_in_phase = self.time_in_global_phase
@@ -63,6 +52,5 @@ class TrafficLightController:
     def is_green_or_yellow(self, street_id: int, lane_index: int) -> bool:
         tl = self.lights.get((street_id, lane_index))
         if not tl:
-            # Keine Ampel => treat as green
             return True
         return tl.phase == PHASE_GREEN or tl.phase == PHASE_YELLOW
